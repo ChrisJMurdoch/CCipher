@@ -1,12 +1,15 @@
 
 #pragma once
 
+// RGP Pixel structure
 struct Pixel
 {
     int r;
     int g;
     int b;
 };
+
+// PPM format structure
 struct PPM {
     int height;
     int width;
@@ -14,11 +17,18 @@ struct PPM {
     struct Pixel raster[];
 };
 
+// Get ppm
+struct PPM * getPPM(FILE *fp);
 char * readWord(FILE *fp);
 void nextLine(FILE *fp);
+
+// Show ppm
 void showPPM(struct PPM *im);
 void printRaster(struct PPM *im);
 
-struct PPM * getPPM(FILE *f);
+// Save ppm
+int savePPM(FILE *fp, struct PPM *ppm);
+
+// TODO
 struct PPM * encode(struct PPM *im, char *message, unsigned int mSize, unsigned int secret);
 char * decode(struct PPM *im, unsigned int secret);

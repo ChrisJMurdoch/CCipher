@@ -4,6 +4,7 @@
 /build/
 # Image files
 /resources/
+/target/
 # Executables
 *.exe
 # Macros
