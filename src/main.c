@@ -10,60 +10,22 @@ const bool SHOW_RASTER = false;
 
 int main(int argc, char *argv[])
 {
-    // Get mode
-    printf("\nWould you like to encrypt or decrypt a message?\n1. Encrypt\n2. Decrypt\n");
-    char response[100];
-    do
+    switch (argc)
     {
-        printf("\nPlease type 1 or 2:\n> ");
-        gets(response);
-    } while (strcmp(response, "1") * strcmp(response, "2") != 0);
-
-    // Decide mode
-    char mode;
-    if ( strcmp(response, "1") == 0 )
-    {
-        if (mainEncrypt() == -1)
-            return -1;
+    case 3:
+        mainDecrypt(argv[2]);
+        break;
+    case 4:
+        mainEncrypt(argv[2], argv[3]);
+        break;
+    default:
+        printf("Wrong parameters, type:\nsteg e input.ppm output.ppm\nsteg d input.ppm");
+        return -1;
     }
-    else
-        mainDecrypt();
-    
-    // Exit
-    printf("\n\n~Program exiting successfully~\n");
-    return 0;
 }
 
-int mainEncrypt()
+int mainEncrypt(char* fileName, char *targetName)
 {
-    // Get image location
-    printf("\nWhich image would you like to use?\n1. resources/home-cat.ppm\n2. resources/star_field.ppm\n3. resources/star.ppm\n");
-    char response[1000];
-    do
-    {
-        printf("\nPlease type 1, 2 or 3:\n> ");
-        gets(response);
-    } while (strcmp(response, "1") * strcmp(response, "2")  * strcmp(response, "3") != 0);
-    
-    // Get file name
-    char *fileName;
-    char *targetName;
-    switch (response[0])
-    {
-    case '1':
-        fileName = "./resources/home-cat.ppm";
-        targetName = "./target/home-cat.ppm";
-        break;
-    case '2':
-        fileName = "./resources/star_field.ppm";
-        targetName = "./target/star_field.ppm";
-        break;
-    case '3':
-        fileName = "./resources/star.ppm";
-        targetName = "./target/star.ppm";
-        break;
-    }
-
     // Open ppm
     FILE *fp = fopen(fileName, "r");
     if (fp == NULL)
@@ -76,14 +38,14 @@ int mainEncrypt()
         return -1;
 
     // Get key
-    printf("\nWhat key would you like to use?\n> ");
+    printf("\nKey?\n> ");
+    char response[100];
     gets(response);
     int key = atoi(response);
 
     // Get message
-    printf("\nWhat message would you like to encode?\n> ");
+    printf("\nMessage?\n> ");
     gets(response);
-
 
     // Encode
     struct PPM *encoded = encode(ppm, response, 1000, key);
@@ -94,37 +56,13 @@ int mainEncrypt()
     if (tp == NULL)
         return -1;
     savePPM(tp, encoded);
-    printf("\nSaved to %s.", targetName);
+    printf("\nSaved to %s\n", targetName);
 
     return 0;
 }
 
-int mainDecrypt()
+int mainDecrypt(char *fileName)
 {
-    // Get image location
-    printf("\nWhich image would you like to use?\n1. target/home-cat.ppm\n2. target/star_field.ppm\n3. target/star.ppm\n");
-    char response[1000];
-    do
-    {
-        printf("\nPlease type 1, 2 or 3:\n> ");
-        gets(response);
-    } while (strcmp(response, "1") * strcmp(response, "2")  * strcmp(response, "3") != 0);
-    
-    // Get file name
-    char *fileName;
-    switch (response[0])
-    {
-    case '1':
-        fileName = "./target/home-cat.ppm";
-        break;
-    case '2':
-        fileName = "./target/star_field.ppm";
-        break;
-    case '3':
-        fileName = "./target/star.ppm";
-        break;
-    }
-
     // Open ppm
     FILE *fp = fopen(fileName, "r");
     if (fp == NULL)
@@ -137,7 +75,8 @@ int mainDecrypt()
         return -1;
 
     // Get key
-    printf("\nWhat key would you like to use?\n> ");
+    printf("\nKey?\n> ");
+    char response[100];
     gets(response);
     int key = atoi(response);
 
@@ -294,7 +233,7 @@ void setBit(struct PPM *ppm, int bit, int position, int secret)
 
 char * decode(struct PPM *ppm, unsigned int secret)
 {
-    printf("\n~Message start~\n");
+    printf("\n");
 
     // Array to hold character bits
     unsigned short buffer[8];
@@ -335,7 +274,7 @@ char * decode(struct PPM *ppm, unsigned int secret)
             }
         }
     }
-    end: printf("\n~Message end~");
+    end: printf("\n");
 }
 
 void savePPM(FILE *fp, struct PPM *ppm)
