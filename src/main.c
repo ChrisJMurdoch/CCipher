@@ -10,32 +10,144 @@ const bool SHOW_RASTER = false;
 
 int main(int argc, char *argv[])
 {
+    // Get mode
+    printf("\nWould you like to encrypt or decrypt a message?\n1. Encrypt\n2. Decrypt\n");
+    char response[100];
+    do
+    {
+        printf("\nPlease type 1 or 2:\n> ");
+        gets(response);
+    } while (strcmp(response, "1") * strcmp(response, "2") != 0);
+
+    // Decide mode
+    char mode;
+    if ( strcmp(response, "1") == 0 )
+    {
+        if (mainEncrypt() == -1)
+            return -1;
+    }
+    else
+        mainDecrypt();
+    
+    // Exit
+    printf("\n\n~Program exiting successfully~\n");
+    return 0;
+}
+
+int mainEncrypt()
+{
+    // Get image location
+    printf("\nWhich image would you like to use?\n1. resources/home-cat.ppm\n2. resources/star_field.ppm\n3. resources/star.ppm\n");
+    char response[1000];
+    do
+    {
+        printf("\nPlease type 1, 2 or 3:\n> ");
+        gets(response);
+    } while (strcmp(response, "1") * strcmp(response, "2")  * strcmp(response, "3") != 0);
+    
+    // Get file name
+    char *fileName;
+    char *targetName;
+    switch (response[0])
+    {
+    case '1':
+        fileName = "./resources/home-cat.ppm";
+        targetName = "./target/home-cat.ppm";
+        break;
+    case '2':
+        fileName = "./resources/star_field.ppm";
+        targetName = "./target/star_field.ppm";
+        break;
+    case '3':
+        fileName = "./resources/star.ppm";
+        targetName = "./target/star.ppm";
+        break;
+    }
+
     // Open ppm
-    FILE *fp = fopen("./resources/test.ppm", "r");
+    FILE *fp = fopen(fileName, "r");
     if (fp == NULL)
+    {
+        printf("Cannot open ppm file.");
         return -1;
+    }
     struct PPM *ppm = getPPM(fp);
     if ((int)ppm == -1)
         return -1;
 
-    // Display
-    showPPM(ppm);
+    // Get key
+    printf("\nWhat key would you like to use?\n> ");
+    gets(response);
+    int key = atoi(response);
+
+    // Get message
+    printf("\nWhat message would you like to encode?\n> ");
+    gets(response);
+
 
     // Encode
-    encode(ppm, "abc", 3, 321);
+    struct PPM *encoded = encode(ppm, response, 1000, key);
+    printf("\nEncoded.\n");
 
-    // Write ppm
-    FILE *tp = fopen("./target/test.ppm", "w");
+    // Write encoded ppm
+    FILE *tp = fopen(targetName, "w");
     if (tp == NULL)
         return -1;
-    savePPM(tp, ppm);
+    savePPM(tp, encoded);
+    printf("\nSaved to %s.", targetName);
 
-    // Exit
-    printf("Program exiting successfully.\n");
     return 0;
 }
 
-struct PPM *getPPM(FILE *fp)
+int mainDecrypt()
+{
+    // Get image location
+    printf("\nWhich image would you like to use?\n1. target/home-cat.ppm\n2. target/star_field.ppm\n3. target/star.ppm\n");
+    char response[1000];
+    do
+    {
+        printf("\nPlease type 1, 2 or 3:\n> ");
+        gets(response);
+    } while (strcmp(response, "1") * strcmp(response, "2")  * strcmp(response, "3") != 0);
+    
+    // Get file name
+    char *fileName;
+    switch (response[0])
+    {
+    case '1':
+        fileName = "./target/home-cat.ppm";
+        break;
+    case '2':
+        fileName = "./target/star_field.ppm";
+        break;
+    case '3':
+        fileName = "./target/star.ppm";
+        break;
+    }
+
+    // Open ppm
+    FILE *fp = fopen(fileName, "r");
+    if (fp == NULL)
+    {
+        printf("Cannot open ppm file.");
+        return -1;
+    }
+    struct PPM *ppm = getPPM(fp);
+    if ((int)ppm == -1)
+        return -1;
+
+    // Get key
+    printf("\nWhat key would you like to use?\n> ");
+    gets(response);
+    int key = atoi(response);
+
+    // Decode
+    decode(ppm, key);
+
+    return 0;
+}
+
+struct PPM * getPPM(FILE *fp)
 {
     // Read header code
     if (strcmp(readWord(fp), "P3") != 0)
@@ -71,7 +183,7 @@ struct PPM *getPPM(FILE *fp)
     return ppm;
 }
 
-char *readWord(FILE *fp)
+char * readWord(FILE *fp)
 {
     static char word[100];
     // Append letters to array til whitespace reached
@@ -94,8 +206,7 @@ char *readWord(FILE *fp)
 
 void nextLine(FILE *fp)
 {
-    while (fgetc(fp) != '\n')
-        ;
+    while (fgetc(fp) != '\n');
 }
 
 void showPPM(struct PPM *ptr)
@@ -114,53 +225,117 @@ void printRaster(struct PPM *ptr)
     int i = 0;
     for (i = 0; i < ptr->width * ptr->height; i++)
     {
-        printf("R:%d, G:%d, B:%d\n", ptr->raster[i].r, ptr->raster[i].g, ptr->raster[i].b);
+        printf("%d %d %d\n", ptr->raster[i].r, ptr->raster[i].g, ptr->raster[i].b);
     }
 }
 
-struct PPM *encode(struct PPM *ppm, char *message, unsigned int mSize, unsigned int secret)
+struct PPM * encode(struct PPM *ppm, char *message, unsigned int mSize, unsigned int secret)
 {
-    int character;
+    // Create deep copy
+    struct PPM *copy = malloc(sizeof(struct PPM) + sizeof(struct Pixel) * ppm->width * ppm->height);
+    copy->width = ppm->width;
+    copy->height = ppm->height;
+    copy->maxval = ppm->maxval;
+    int i;
+    for(i=0; i<ppm->width*ppm->height; i++)
+    {
+        copy->raster[i].r = ppm->raster[i].r;
+        copy->raster[i].g = ppm->raster[i].g;
+        copy->raster[i].b = ppm->raster[i].b;
+    }
+
     // For each character
+    int character;
     for (character = 0; character < mSize; character++)
     {
-        char c = message[character];
-        printf("%c: %d\n", c, c);
+        unsigned char c = message[character];
 
-        short bit;
         // For each bit
+        short bit;
         for (bit = 0; bit < 8; bit++)
         {
             unsigned char masked = ((0b00000001 << bit) & c) >> bit;
-            printf("%d: ", masked);
-            setBit(ppm, masked, character*8 + bit);
+            setBit(copy, masked, character*8 + bit, secret);
         }
-        printf("\n");
     }
-    return NULL;
+
+    // Add NULL terminator
+    short bit;
+    for (bit = 0; bit < 8; bit++)
+    {
+        setBit(copy, 0, character*8 + bit, secret);
+    }
+
+    return copy;
 }
 
-void setBit(struct PPM *ppm, int bit, int position)
+int pseudoRand(int seed, int max)
 {
-    printf("Alt: P:%d, C:%d", position / 3, position % 3);
+    srand(seed);
+    return rand() % max;
+}
+
+void setBit(struct PPM *ppm, int bit, int position, int secret)
+{
+    int prand = pseudoRand(position/3 + secret, ppm->width*ppm->height-1);
     switch (position % 3)
     {
     case 0:
-        printf(" | %d -> ", ppm->raster[position / 3].r);
-        ppm->raster[position / 3].r = (ppm->raster[position / 3].r & 0b11111110) | bit;
-        printf("%d\n", ppm->raster[position / 3].r);
+        ppm->raster[prand].r = (ppm->raster[prand].r & 0b11111110) | bit;
         break;
     case 1:
-        printf(" | %d -> ", ppm->raster[position / 3].g);
-        ppm->raster[position / 3].g = (ppm->raster[position / 3].g & 0b11111110) | bit;
-        printf("%d\n", ppm->raster[position / 3].g);
+        ppm->raster[prand].g = (ppm->raster[prand].g & 0b11111110) | bit;
         break;
     case 2:
-        printf(" | %d -> ", ppm->raster[position / 3].b);
-        ppm->raster[position / 3].b = (ppm->raster[position / 3].b & 0b11111110) | bit;
-        printf("%d\n", ppm->raster[position / 3].b);
+        ppm->raster[prand].b = (ppm->raster[prand].b & 0b11111110) | bit;
         break;
     }
+}
+
+char * decode(struct PPM *ppm, unsigned int secret)
+{
+    printf("\n~Message start~\n");
+
+    // Array to hold character bits
+    unsigned short buffer[8];
+    unsigned short bufIndex = 0;
+
+    // For each pixel
+    unsigned int pixel;
+    for (pixel=0; pixel<ppm->width*ppm->height; pixel++)
+    {
+        int prand = pseudoRand(pixel + secret, ppm->width*ppm->height-1);
+        // For each colour
+        unsigned short colour;
+        for (colour=0; colour<3; colour++)
+        {
+            switch (colour)
+            {
+            case 0:
+                buffer[bufIndex++] = ppm->raster[prand].r & 0b00000001;
+                break;
+            case 1:
+                buffer[bufIndex++] = ppm->raster[prand].g & 0b00000001;
+                break;
+            case 2:
+                buffer[bufIndex++] = ppm->raster[prand].b & 0b00000001;
+                break;
+            }
+
+
+            // Check for complete character
+            if (bufIndex == 8)
+            {
+                char result = (buffer[7]<<7) + (buffer[6]<<6) + (buffer[5]<<5) + (buffer[4]<<4)
+                            + (buffer[3]<<3) + (buffer[2]<<2) + (buffer[1]<<1) + (buffer[0]<<0);
+                if (result == 0)
+                    goto end;
+                printf("%c", result);
+                bufIndex = 0;
+            }
+        }
+    }
+    end: printf("\n~Message end~");
 }
 
 void savePPM(FILE *fp, struct PPM *ppm)

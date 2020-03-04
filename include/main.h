@@ -17,6 +17,10 @@ struct PPM {
     struct Pixel raster[];
 };
 
+// Mains
+int mainEncrypt();
+int mainDecrypt();
+
 // Get ppm
 struct PPM * getPPM(FILE *fp);
 char * readWord(FILE *fp);
@@ -31,7 +35,7 @@ void savePPM(FILE *fp, struct PPM *ppm);
 
 // Encode
 struct PPM * encode(struct PPM *im, char *message, unsigned int mSize, unsigned int secret);
-void setBit(struct PPM *ppm, int bit, int position);
+void setBit(struct PPM *ppm, int bit, int position, int secret);
 
-// TODO
+// Decode
 char * decode(struct PPM *im, unsigned int secret);
