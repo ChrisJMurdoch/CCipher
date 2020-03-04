@@ -27,8 +27,11 @@ void showPPM(struct PPM *im);
 void printRaster(struct PPM *im);
 
 // Save ppm
-int savePPM(FILE *fp, struct PPM *ppm);
+void savePPM(FILE *fp, struct PPM *ppm);
+
+// Encode
+struct PPM * encode(struct PPM *im, char *message, unsigned int mSize, unsigned int secret);
+void setBit(struct PPM *ppm, int bit, int position);
 
 // TODO
-struct PPM * encode(struct PPM *im, char *message, unsigned int mSize, unsigned int secret);
 char * decode(struct PPM *im, unsigned int secret);
